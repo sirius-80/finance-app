@@ -1,0 +1,36 @@
+<p>account-view works!</p>
+
+<table>
+    <tr>
+        <th>Date</th>
+        <th>Balance</th>
+        <th>Income</th>
+        <th>Expenses</th>
+        <th>Profit</th>
+        <th>Loss</th>
+    </tr>
+    <tr *ngFor="let data of combined$ | async">
+        <td>{{data[0] | date}}</td>
+        <td>{{data[1].balance | number:0}}</td>
+        <td>{{data[2].income | number:0}}</td>
+        <td>-</td>
+        <td>-</td>
+        <td>-</td>
+    </tr>
+</table>
+<!-- <h1>Dates</h1>
+<ul *ngFor="let date of dates$ | async">
+    <li>{{date | date}}</li>
+</ul>
+
+<h1>Income</h1>
+<ul *ngFor="let income of income$ | async">
+    <li>{{income.date | date}} - € {{income.income | number:0}}</li>
+</ul>
+
+<h1>Balances</h1>
+<ul *ngFor="let balance of balances$ | async">
+    <li>
+        {{balance.date | date}} - <span class="badge">€ {{balance.balance | number:0}}</span>
+    </li>
+</ul> -->
