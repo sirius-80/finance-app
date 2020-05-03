@@ -1,12 +1,17 @@
 import { Action } from '@ngrx/store';
-import { Balance } from 'src/app/account-view/model/model';
 import { Account } from '../model/model';
 
 export const LOAD_ACCOUNTS = '[Domain-model] LOAD_ACCOUNTS';
+export const SANITY_CHECK_ACCOUNTS = '[Domain-model] SANITY_CHECK_ACCOUNTS';
 export const SET_ACCOUNTS = '[Domain-model] SET_ACCOUNTS';
 
 export class LoadAccounts implements Action {
     readonly type = LOAD_ACCOUNTS;
+}
+
+export class SanityCheckAccounts implements Action {
+    readonly type = SANITY_CHECK_ACCOUNTS;
+    constructor(public payload: Account[]) {}
 }
 
 export class SetAccounts implements Action {
@@ -15,4 +20,4 @@ export class SetAccounts implements Action {
 }
 
 
-export type domainModelActions = LoadAccounts | SetAccounts;
+export type domainModelActions = LoadAccounts | SanityCheckAccounts | SetAccounts;

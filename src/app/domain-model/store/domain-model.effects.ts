@@ -1,7 +1,7 @@
 import { Injectable } from "@angular/core";
 import { Effect, Actions, ofType } from '@ngrx/effects';
 import { HttpClient } from '@angular/common/http';
-import { switchMap, map, filter, withLatestFrom, mergeMap, toArray, mergeAll, tap } from 'rxjs/operators';
+import { switchMap, map, withLatestFrom, toArray, mergeAll, tap } from 'rxjs/operators';
 
 import { Store } from '@ngrx/store';
 import { State } from './domain-model.reducers';
@@ -49,11 +49,36 @@ export class DomainModelEffects {
         )),
         tap(val => console.log('TAP:', val)),
         mergeAll(),
-        map((accounts: Account[]) => {
+        switchMap((accounts: Account[]) => {
             console.log('Setting accounts', accounts);
-            
-            return new domainModelActions.SetAccounts(accounts);
+            return [
+                new domainModelActions.SanityCheckAccounts(accounts),
+                new domainModelActions.SetAccounts(accounts),
+            ];
         })
     );
 
+    @Effect({dispatch: false})
+    doSanityCheckAccounts = this.actions$.pipe(
+        ofType(domainModelActions.SANITY_CHECK_ACCOUNTS),
+        switchMap((action: domainModelActions.SanityCheckAccounts) => from(action.payload).pipe(
+            map(account => {
+                const EPSILON = 1e-8;
+                const invalidTransactions: Transaction[] = [];
+                let balance = undefined;
+                for (const t of account.transactions) {
+                    if (balance !== undefined) {
+                        if (balance + t.amount - t.balanceAfter > EPSILON) {
+                            invalidTransactions.push(t);
+                            console.log('ERROR: Invalid transaction:', t);
+                        } else {
+                            // console.log('Transaction OK', t);
+                        }
+                    }
+                    balance = t.balanceAfter;
+                }
+                return invalidTransactions;
+            }),
+        ))
+    );
 }

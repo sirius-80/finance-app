@@ -1,10 +1,10 @@
 import { Component, OnInit } from '@angular/core';
 import { Store } from '@ngrx/store';
 import { AppState } from 'src/app/store/app.reducers';
-import { Observable, combineLatest, generate, from, concat, zip, merge, of } from 'rxjs';
-import { switchMap, first, filter, last, map, toArray, mergeAll, mergeMap, groupBy, reduce, tap, concatAll, withLatestFrom, zipAll, combineAll } from 'rxjs/operators';
+import { Observable, generate, from, zip } from 'rxjs';
+import { switchMap, first, filter, last, map, toArray, mergeAll, mergeMap, groupBy, reduce, tap, withLatestFrom, defaultIfEmpty } from 'rxjs/operators';
 import { Account, Transaction } from '../../domain-model/model/model';
-import { Balance, Income } from '../model/model';
+import { Balance, Income, Expenses, Profit, Loss } from '../model/model';
 
 @Component({
   selector: 'app-account-view',
@@ -12,10 +12,13 @@ import { Balance, Income } from '../model/model';
   styleUrls: ['./account-view.component.css']
 })
 export class AccountViewComponent implements OnInit {
+  dates$: Observable<Date[]>;
   balances$: Observable<Balance[]>;
   income$: Observable<Income[]>;
-  dates$: Observable<Date[]>;
-  combined$;
+  expenses$: Observable<Expenses[]>;
+  profit$: Observable<Profit[]>;
+  loss$: Observable<Loss[]>;
+  combined$: Observable<[Date, Balance, Income, Expenses, Profit, Loss][]>;
 
   constructor(private store: Store<AppState>) { }
 
@@ -31,27 +34,6 @@ export class AccountViewComponent implements OnInit {
   }
 
   ngOnInit() {
-    this.balances$ = this.store.select(state => state.domainModel.accounts).pipe(
-      map(accounts => from(accounts).pipe(
-        switchMap((account: Account) => from(account.transactions).pipe(
-          first(),
-          switchMap(t => this.dateGenerator(t.date, new Date())),
-          switchMap(date => from(account.transactions).pipe(
-            filter(t => t.date < date),
-            last(),
-            map(t => new Balance(date, t.balanceAfter))
-          )),
-        )),
-        groupBy(balance => balance.date.getTime()),
-        map(group => group.pipe(
-          reduce((acc, val: Balance) => acc.add(val), new Balance(new Date(group.key), 0)),
-        )),
-        mergeAll(),
-        toArray(),
-      )),
-      mergeAll(),
-    );
-
     this.dates$ = this.store.select(state => state.domainModel.accounts).pipe(
       switchMap((accounts: Account[]) => from(accounts).pipe(
         switchMap(account => from(account.transactions).pipe(
@@ -59,62 +41,117 @@ export class AccountViewComponent implements OnInit {
         )),
         groupBy((transaction: Transaction) => transaction.date.getTime()),
         map(group => new Date(group.key)),
-        // tap(val => console.log('DATE', val)),
         map(date => this.dateGenerator(date, new Date())),
         mergeAll(),
         toArray(),
       )),
+      tap(val => console.log('Derived dates'))
     );
 
-    // this.income$ = this.dates$.pipe(
-    //   withLatestFrom(this.store.select(state => state.domainModel.accounts)),
-    //   switchMap(([dates, accounts]: [Date[], Account[]]) => zip(dates, accounts).pipe(
-    //     switchMap(([date, account]: [Date, Account]) => from(account.transactions).pipe(
-    //       filter(t => t.date >= date && t.date < new Date(date.getFullYear(), date.getMonth() + 1, 1)),
-    //       filter(t => t.amount > 0),
-    //       map(t => t.amount),
-    //       reduce((acc, val) => acc + val, 0),
-    //       map(amount => new Income(date, amount)),
-    //     )),
-    //     groupBy(income => income.date.getTime()),
-    //     switchMap(group => group.pipe(
-    //       reduce((acc, val) => acc.add(val), new Income(new Date(group.key), 0))
-    //     )),
-    //     toArray(),
-    //     )),
-    // );
+    this.balances$ = this.store.select(state => state.domainModel.accounts).pipe(
+      withLatestFrom(this.dates$),
+      switchMap(([accounts, dates]) => from(dates).pipe(
+        switchMap(date => from(accounts).pipe(
+          switchMap(account => from(account.transactions).pipe(
+            filter(t => t.date < date),
+            map(t => t.balanceAfter),
+            defaultIfEmpty(0),
+            last(),
+            map(balance => new Balance(date, balance))
+          )),
+          groupBy(balance => balance.date.getTime()),
+          switchMap(group => group.pipe(
+            reduce((acc, val) => acc.add(val), new Balance(new Date(group.key), 0))
+          )),
+        )),
+        toArray(),
+      )),
+      tap(val => console.log('Derived balances'))
+    );
 
-    // this.income$.subscribe(val => console.log('Income:', val));
-
-    this.income$ = combineLatest(this.dates$, this.store.select(state => state.domainModel.accounts),
-      (dates, accounts) => {
-        const income: Income[] = [];
-        from(dates).pipe(
-          switchMap((date: Date) => from(accounts).pipe(
-            switchMap((account: Account) => from(account.transactions).pipe(
-              filter(t => t.date >= date && t.date < new Date(date.getFullYear(), date.getMonth() + 1, 1)),
-              filter(t => t.amount > 0),
-              map(t => t.amount),
-              reduce((acc, val) => acc + val, 0),
-            )),
+    this.income$ = this.store.select(state => state.domainModel.accounts).pipe(
+      withLatestFrom(this.dates$),
+      switchMap(([accounts, dates]) => from(dates).pipe(
+        switchMap(date => from(accounts).pipe(
+          switchMap(account => from(account.transactions).pipe(
+            filter(t => !t.internal),
+            filter(t => t.date >= date && t.date < new Date(date.getFullYear(), date.getMonth() + 1, date.getDate())),
+            filter(t => t.amount > 0),
+            map(t => t.amount),
+            reduce((acc, val) => acc + val, 0),
             map(amount => new Income(date, amount)),
           )),
           groupBy(income => income.date.getTime()),
-          map(group => group.pipe(
+          switchMap(group => group.pipe(
             reduce((acc, val) => acc.add(val), new Income(new Date(group.key), 0))
           )),
-          mergeAll(),
-          // tap(val => console.log(val)),
-        ).subscribe(val => income.push(val));
-        return income;
-      }
+        )),
+        toArray(),
+      )),
+      tap(val => console.log('Derived income'))
+    );
+
+    this.expenses$ = this.store.select(state => state.domainModel.accounts).pipe(
+      withLatestFrom(this.dates$),
+      switchMap(([accounts, dates]) => from(dates).pipe(
+        switchMap(date => from(accounts).pipe(
+          switchMap(account => from(account.transactions).pipe(
+            filter(t => !t.internal),
+            filter(t => t.date >= date && t.date < new Date(date.getFullYear(), date.getMonth() + 1, date.getDate())),
+            filter(t => t.amount < 0),
+            map(t => t.amount),
+            reduce((acc, val) => acc + val, 0),
+            map(amount => new Expenses(date, amount)),
+          )),
+          groupBy(income => income.date.getTime()),
+          switchMap(group => group.pipe(
+            reduce((acc, val) => acc.add(val), new Expenses(new Date(group.key), 0))
+          )),
+        )),
+        toArray(),
+      )),
+      tap(val => console.log('Derived expenses'))
+    );
+
+    this.profit$ = this.dates$.pipe(
+      withLatestFrom(this.income$, this.expenses$),
+      mergeMap(([dates, incomes, expenses]) => zip(from(dates), from(incomes), from(expenses)).pipe(
+        map(([date, income, expenses]) => {
+          const profitOrLoss = income.income + expenses.expenses;
+          if (profitOrLoss > 0) {
+            return new Profit(date, income.income + expenses.expenses);
+          } else {
+            return new Profit(date, 0);
+          }
+        }),
+        toArray(),
+      )),
+      tap(val => console.log('Derived profits'))
+    );
+
+    this.loss$ = this.dates$.pipe(
+      withLatestFrom(this.income$, this.expenses$),
+      mergeMap(([dates, incomes, expenses]) => zip(from(dates), from(incomes), from(expenses)).pipe(
+        map(([date, income, expenses]) => {
+          const profitOrLoss = income.income + expenses.expenses;
+          if (profitOrLoss < 0) {
+            return new Loss(date, income.income + expenses.expenses);
+          } else {
+            return new Loss(date, 0);
+          }
+        }),
+        toArray(),
+      )),
+      tap(val => console.log('Derived losses'))
     );
 
     this.combined$ = this.dates$.pipe(
-      withLatestFrom(this.balances$, this.income$),
-      mergeMap(([dates, balances, incomes]) => zip(from(dates), from(balances), from(incomes)).pipe(
-        toArray(),
-      )),
+      withLatestFrom(this.balances$, this.income$, this.expenses$, this.profit$, this.loss$),
+      mergeMap(([dates, balances, incomes, expenses, profif, loss]) =>
+        zip(from(dates), from(balances), from(incomes), from(expenses), from(profif), from(loss)).pipe(
+          toArray(),
+        )),
+      tap(val => console.log('Derived combinations'))
     );
 
   }

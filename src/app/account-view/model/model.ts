@@ -16,6 +16,10 @@ export class Income {
 
 export class Expenses {
     constructor(public date: Date, public expenses: number) {}
+
+    add(other: Expenses) {
+        return new Expenses(this.date, this.expenses + other.expenses);
+    }
 }
 
 export class Profit {

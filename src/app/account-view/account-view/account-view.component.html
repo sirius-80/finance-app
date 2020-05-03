@@ -13,11 +13,14 @@
         <td>{{data[0] | date}}</td>
         <td>{{data[1].balance | number:0}}</td>
         <td>{{data[2].income | number:0}}</td>
-        <td>-</td>
-        <td>-</td>
-        <td>-</td>
+        <td>{{data[3].expenses | number:0}}</td>
+        <td>{{data[4].profit | number:0}}</td>
+        <td>{{data[5].loss | number:0}}</td>
     </tr>
 </table>
+
+
+
 <!-- <h1>Dates</h1>
 <ul *ngFor="let date of dates$ | async">
     <li>{{date | date}}</li>
