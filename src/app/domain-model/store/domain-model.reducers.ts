@@ -15,12 +15,12 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import { Category, Account } from '../model/model';
+import { Category, BankAccount } from '../model/model';
 import * as domainModelActions from './domain-model.actions';
 
 
 export interface State {
-    accounts: Account[],
+    accounts: BankAccount[],
     categories: Category[]
 }
 
@@ -31,11 +31,16 @@ const initialState: State = {
 
 export function domainModelReducer(state = initialState, action: domainModelActions.domainModelActions) {
     switch(action.type) {
+        case domainModelActions.SET_CATEGORIES:
+            return {
+                ...state,
+                categories: action.payload
+            };
         case domainModelActions.SET_ACCOUNTS:
             return {
                 ...state,
                 accounts: action.payload
-            }
+            };
         default:
             return state;
     }

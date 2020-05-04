@@ -30,6 +30,7 @@ export class HomeComponent implements OnInit {
   constructor(private store: Store<State>) { }
 
   ngOnInit() {
+    this.store.dispatch(new domainModelActions.LoadCategories());
     this.store.dispatch(new domainModelActions.LoadAccounts());
   }
 

@@ -16,11 +16,14 @@
  */
 
 import { Action } from '@ngrx/store';
-import { Account } from '../model/model';
+import { BankAccount, Category } from '../model/model';
 
 export const LOAD_ACCOUNTS = '[Domain-model] LOAD_ACCOUNTS';
 export const SANITY_CHECK_ACCOUNTS = '[Domain-model] SANITY_CHECK_ACCOUNTS';
 export const SET_ACCOUNTS = '[Domain-model] SET_ACCOUNTS';
+
+export const LOAD_CATEGORIES = '[Domain-model] LOAD_CATEGORIES';
+export const SET_CATEGORIES = '[Domain-model] SET_CATEGORIES';
 
 export class LoadAccounts implements Action {
     readonly type = LOAD_ACCOUNTS;
@@ -28,13 +31,23 @@ export class LoadAccounts implements Action {
 
 export class SanityCheckAccounts implements Action {
     readonly type = SANITY_CHECK_ACCOUNTS;
-    constructor(public payload: Account[]) {}
+    constructor(public payload: BankAccount[]) {}
 }
 
 export class SetAccounts implements Action {
     readonly type = SET_ACCOUNTS;
-    constructor(public payload: Account[]) {}
+    constructor(public payload: BankAccount[]) {}
+}
+
+export class LoadCategories implements Action {
+    readonly type = LOAD_CATEGORIES;
+}
+
+export class SetCategories implements Action {
+    readonly type = SET_CATEGORIES;
+    constructor(public payload: Category[]) {}
 }
 
 
-export type domainModelActions = LoadAccounts | SanityCheckAccounts | SetAccounts;
+export type domainModelActions = LoadAccounts | SanityCheckAccounts | SetAccounts
+    | LoadCategories | SetCategories;

@@ -20,7 +20,7 @@ import { Store } from '@ngrx/store';
 import { AppState } from 'src/app/store/app.reducers';
 import { Observable, generate, from, zip } from 'rxjs';
 import { switchMap, first, filter, last, map, toArray, mergeAll, mergeMap, groupBy, reduce, tap, withLatestFrom, defaultIfEmpty } from 'rxjs/operators';
-import { Account, Transaction } from '../../domain-model/model/model';
+import { BankAccount, Transaction } from '../../domain-model/model/model';
 import { Balance, Income, Expenses, Profit, Loss } from '../model/model';
 
 @Component({
@@ -52,7 +52,7 @@ export class AccountViewComponent implements OnInit {
 
   ngOnInit() {
     this.dates$ = this.store.select(state => state.domainModel.accounts).pipe(
-      switchMap((accounts: Account[]) => from(accounts).pipe(
+      switchMap((accounts: BankAccount[]) => from(accounts).pipe(
         switchMap(account => from(account.transactions).pipe(
           first(),
         )),

@@ -1,0 +1,10 @@
+<p>insight works!</p>
+
+<!-- <form> -->
+    <label>Select a category</label>
+    <select (change)="onCategorySelected($event.target.value)" [ngModel]="0">
+        <option *ngFor="let category of categories$ | async" [value]="category.id">{{ category.getQualifiedName() }}</option>
+    </select>
+<!-- </form> -->
+
+<span>Selected category: {{ (selectedCategory$ | async).id }} - {{ (selectedCategory$ | async).name }}</span>

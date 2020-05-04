@@ -17,17 +17,21 @@
 
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { AccountViewComponent } from './account-view/account-view.component';
+import { InsightComponent } from './insight/insight.component';
 
 
 
 @NgModule({
-  declarations: [AccountViewComponent],
+  declarations: [AccountViewComponent, InsightComponent],
   imports: [
-    CommonModule
+    CommonModule,
+    FormsModule,
   ],
   exports: [
-    AccountViewComponent
+    AccountViewComponent,
+    InsightComponent
   ]
 })
 export class AccountViewModule { }

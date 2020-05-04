@@ -15,6 +15,8 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+import { Category } from 'src/app/domain-model/model/model';
+
 export class Balance {
     constructor(public date: Date, public balance: number) {}
 
@@ -45,4 +47,13 @@ export class Profit {
 
 export class Loss {
     constructor(public date: Date, public loss: number) {}
+}
+
+export class CategorySummary {
+    public parent: CategorySummary;
+    public children: CategorySummary[];
+    constructor(public category: Category, public amount: number) {
+        this.parent = null;
+        this.children = []; 
+    }
 }

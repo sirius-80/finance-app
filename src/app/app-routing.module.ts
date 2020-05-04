@@ -19,11 +19,13 @@ import { NgModule } from '@angular/core';
 import { Routes, RouterModule, PreloadAllModules } from '@angular/router';
 import { HomeComponent } from './home/home.component';
 import { AccountViewComponent } from './account-view/account-view/account-view.component';
+import { InsightComponent } from './account-view/insight/insight.component';
 
 
 const appRoutes: Routes = [
-  { path: '', component: HomeComponent},
-  { path: 'accounts', component: AccountViewComponent}
+  { path: '', component: HomeComponent },
+  { path: 'accounts', component: AccountViewComponent },
+  { path: 'insight', component: InsightComponent },
 ];
 
 @NgModule({

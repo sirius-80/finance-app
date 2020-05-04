@@ -54,7 +54,7 @@ export class Category extends Entity {
 
 export class Transaction extends Entity {
     constructor(public id: string,
-        public account: Account,
+        public account: BankAccount,
         public serial: number,
         public date: Date,
         public amount: number,
@@ -91,7 +91,7 @@ export class Transaction extends Entity {
     }
 }
 
-export class Account extends Entity {
+export class BankAccount extends Entity {
     constructor(public id: string, public name: string, public bank: string, public transactions: Transaction[]) {
         super(id);
     }

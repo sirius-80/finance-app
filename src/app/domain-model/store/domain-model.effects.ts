@@ -18,13 +18,13 @@
 import { Injectable } from "@angular/core";
 import { Effect, Actions, ofType } from '@ngrx/effects';
 import { HttpClient } from '@angular/common/http';
-import { switchMap, map, withLatestFrom, toArray, mergeAll, tap } from 'rxjs/operators';
+import { switchMap, map, withLatestFrom, toArray, mergeAll, tap, mergeMap } from 'rxjs/operators';
 
 import { Store } from '@ngrx/store';
 import { State } from './domain-model.reducers';
 import * as domainModelActions from './domain-model.actions';
-import { AccountPojo } from '../model/server-types';
-import { Account, Transaction, Category } from '../model/model';
+import { AccountPojo, CategoryPojo } from '../model/server-types';
+import { BankAccount, Transaction, Category } from '../model/model';
 import { from } from 'rxjs';
 
 
@@ -38,6 +38,34 @@ export class DomainModelEffects {
         private store: Store<State>) { }
 
     @Effect()
+    doLoadCategories = this.actions$.pipe(
+        ofType(domainModelActions.LOAD_CATEGORIES),
+        switchMap((action: domainModelActions.LoadCategories) => {
+            const url = 'http://' + this.SERVER + ':5002/categories1';
+            return this.httpClient.get<CategoryPojo[]>(url);
+        }),
+        mergeMap((categories: CategoryPojo[]) => from(categories).pipe(
+            map((categoryPojo: CategoryPojo) => new Category(categoryPojo.id, categoryPojo.name, categoryPojo.parentId && new Category(categoryPojo.parentId, 'temp', null) || null)),
+            toArray(),
+        )),
+        mergeMap((categories: Category[]) => from(categories).pipe(
+            map((category: Category) => {
+                if (category.parent) {
+                    for (const cat of categories) {
+                        if (category.parent.id === cat.id) {
+                            category.parent = cat;
+                            break;
+                        }
+                    }
+                }
+                return category;
+            }),
+            toArray(),
+        )),
+        map((categories: Category[]) => new domainModelActions.SetCategories(categories))
+    );
+
+    @Effect()
     doLoadAccounts = this.actions$.pipe(
         ofType(domainModelActions.LOAD_ACCOUNTS),
         switchMap((action: domainModelActions.LoadAccounts) => {
@@ -48,7 +76,7 @@ export class DomainModelEffects {
         map((accountPojos: AccountPojo[]) => from(accountPojos).pipe(
             withLatestFrom(this.store.select(state => state.categories)),
             map(([accountPojo, categories]: [AccountPojo, Category[]]) => {
-                const account = new Account(accountPojo.id, accountPojo.name, accountPojo.bank, []);
+                const account = new BankAccount(accountPojo.id, accountPojo.name, accountPojo.bank, []);
                 let category: Category = null;
                 for (const t of accountPojo.transactions) {
                     if (t.categoryId) {
@@ -66,7 +94,7 @@ export class DomainModelEffects {
         )),
         tap(val => console.log('TAP:', val)),
         mergeAll(),
-        switchMap((accounts: Account[]) => {
+        switchMap((accounts: BankAccount[]) => {
             console.log('Setting accounts', accounts);
             return [
                 new domainModelActions.SanityCheckAccounts(accounts),
@@ -75,7 +103,7 @@ export class DomainModelEffects {
         })
     );
 
-    @Effect({dispatch: false})
+    @Effect({ dispatch: false })
     doSanityCheckAccounts = this.actions$.pipe(
         ofType(domainModelActions.SANITY_CHECK_ACCOUNTS),
         switchMap((action: domainModelActions.SanityCheckAccounts) => from(action.payload).pipe(

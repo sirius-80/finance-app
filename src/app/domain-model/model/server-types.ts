@@ -18,8 +18,7 @@
 export interface CategoryPojo  {
     id: string,
     name: string,
-    parent: CategoryPojo,
-    children: CategoryPojo[],
+    parentId: string,
 }
 
 export interface TransactionPojo {
